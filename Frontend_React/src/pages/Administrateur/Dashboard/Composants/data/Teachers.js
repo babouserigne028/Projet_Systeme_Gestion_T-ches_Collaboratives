@@ -1,0 +1,42 @@
+export const TEACHERS = [
+  {
+    name: "Dr. Amadou Diop",
+    tasks: 42,
+    done: 39,
+    projects: 5,
+    score: 93,
+    ini: "AD",
+  },
+  {
+    name: "Prof. Khady Gueye",
+    tasks: 35,
+    done: 30,
+    projects: 4,
+    score: 86,
+    ini: "KG",
+  },
+  {
+    name: "Mme. Rokhaya Sarr",
+    tasks: 31,
+    done: 26,
+    projects: 4,
+    score: 84,
+    ini: "RS",
+  },
+  {
+    name: "M. Ousmane Thiam",
+    tasks: 28,
+    done: 19,
+    projects: 3,
+    score: 68,
+    ini: "OT",
+  },
+  {
+    name: "Dr. Lamine Diouf",
+    tasks: 20,
+    done: 11,
+    projects: 2,
+    score: 55,
+    ini: "LD",
+  },
+];

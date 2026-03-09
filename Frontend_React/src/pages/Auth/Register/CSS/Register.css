@@ -1,0 +1,28 @@
+@media (prefers-reduced-motion: reduce) {
+          *, *::before, *::after { animation-duration:0.01ms!important; transition-duration:0.01ms!important; }
+        }
+        .esmt-input {
+          width:100%; padding:0.7rem 1rem; border-radius:10px;
+          border:1.5px solid #e5d9b6; font-family:'Comic Neue',cursive;
+          font-size:0.9rem; color:#171717; background:#fff;
+          outline:none; transition:border-color .2s, box-shadow .2s;
+        }
+        .esmt-input:focus {
+          border-color:#D4AF37;
+          box-shadow:0 0 0 3px rgba(212,175,55,.15);
+        }
+        .esmt-input::placeholder { color:#bbb; }
+        .esmt-input-error {
+          border-color:#f87171 !important;
+          box-shadow:0 0 0 3px rgba(248,113,113,.12) !important;
+        }
+        @keyframes fadeUp {
+          from { opacity:0; transform:translateY(16px); }
+          to   { opacity:1; transform:translateY(0); }
+        }
+        .fade-up { animation:fadeUp .5s cubic-bezier(.4,0,.2,1) both; }
+        @keyframes slideIn {
+          from { opacity:0; transform:translateX(20px); }
+          to   { opacity:1; transform:translateX(0); }
+        }
+        .slide-in { animation:slideIn .35s cubic-bezier(.4,0,.2,1) both; }
