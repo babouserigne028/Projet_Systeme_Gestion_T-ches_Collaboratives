@@ -1,25 +1,34 @@
 import { useState } from "react";
-import { Ic } from "./data/Icones";
+import { Ic } from "../../../../composants/Icons";
+import useRegister from "../../../../services/hooks/auth/useRegister";
+import useCheckEmail from "../../../../services/hooks/auth/useCheckEmail";
 
-const CreateUserModal = ({ onClose, onCreate }) => {
+const CreateUserModal = ({
+  onClose,
+  onCreate,
+  refresh,
+  fetchListeUserEnAttentDeValidation,
+  refreshStatsEligibleProf,
+}) => {
+  const { register, loading, error } = useRegister();
+  const { checkEmail, loading: checkingEmail, isAvailable } = useCheckEmail();
   const [formData, setFormData] = useState({
     email: "",
     prenom: "",
     nom: "",
     telephone: "",
     password: "",
-    role: "Etudiant",
-    matricule: "",
+    role: "etudiant",
     promotion: "",
   });
 
   const ROLE_OPTIONS = [
-    { value: "Etudiant", label: "Étudiant" },
-    { value: "Professeur", label: "Professeur" },
-    { value: "Admin", label: "Admin" },
+    { value: "etudiant", label: "Étudiant" },
+    { value: "professeur", label: "Professeur" },
+    { value: "administrateur", label: "Admin" },
   ];
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     // Validation des champs obligatoires
     if (
       !formData.email.trim() ||
@@ -30,23 +39,49 @@ const CreateUserModal = ({ onClose, onCreate }) => {
       return;
     }
 
-    const newUser = {
-      id: Math.max(...PENDING.map((p) => p.id), 0) + 1,
-      name: `${formData.prenom} ${formData.nom}`,
+    // Vérifier que l'email est disponible (éviter l'erreur de duplication)
+    if (isAvailable !== true) {
+      return;
+    }
+
+    // Appeler l'API via le hook useRegister
+    const response = await register({
       email: formData.email,
-      role: formData.role === "Professeur" ? "Professeur" : "Étudiant",
-      date: "Aujourd'hui",
-      ini: `${formData.prenom[0]}${formData.nom[0]}`.toUpperCase(),
-    };
-    onCreate(newUser);
-    onClose();
+      prenom: formData.prenom,
+      nom: formData.nom,
+      telephone: formData.telephone,
+      password: formData.password,
+      role: formData.role,
+      promotion: formData.promotion,
+    });
+
+    if (response) {
+      // Créer l'objet utilisateur pour l'affichage local
+      const roleLabel =
+        ROLE_OPTIONS.find((opt) => opt.value === formData.role)?.label ||
+        formData.role;
+      const newUser = {
+        id: response.id,
+        name: `${formData.prenom} ${formData.nom}`,
+        email: formData.email,
+        role: roleLabel,
+        date: "Aujourd'hui",
+        ini: `${formData.prenom[0]}${formData.nom[0]}`.toUpperCase(),
+      };
+      onCreate(newUser);
+      refresh();
+      fetchListeUserEnAttentDeValidation();
+      refreshStatsEligibleProf();
+      onClose();
+    }
   };
 
   const isFormValid =
     formData.email.trim() &&
     formData.prenom.trim() &&
     formData.nom.trim() &&
-    formData.password.trim();
+    formData.password.trim() &&
+    isAvailable === true; // Email DOIT être disponible (pas null ou false)
 
   return (
     <div
@@ -109,15 +144,37 @@ const CreateUserModal = ({ onClose, onCreate }) => {
               <label className="text-xs font-bold text-gray-600 uppercase mb-1 block">
                 Email *
               </label>
-              <input
-                type="email"
-                value={formData.email}
-                onChange={(e) =>
-                  setFormData({ ...formData, email: e.target.value })
-                }
-                className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none focus:border-indigo-500"
-                placeholder="ex: fatou.diallo@esmt.sn"
-              />
+              <div className="relative">
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => {
+                    setFormData({ ...formData, email: e.target.value });
+                  }}
+                  onBlur={() => {
+                    if (formData.email.trim()) {
+                      checkEmail(formData.email);
+                    }
+                  }}
+                  className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none focus:border-indigo-500"
+                  placeholder="ex: fatou.diallo@esmt.sn"
+                />
+                {/* Indicateur de vérification */}
+                {checkingEmail && (
+                  <div className="absolute right-3 top-2.5 animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                )}
+                {isAvailable === false && (
+                  <Ic.X className="absolute right-3 top-2.5 w-4 h-4 text-red-500" />
+                )}
+                {isAvailable === true && (
+                  <Ic.Check className="absolute right-3 top-2.5 w-4 h-4 text-green-500" />
+                )}
+              </div>
+              {isAvailable === false && (
+                <p className="text-xs text-red-600 mt-1">
+                  Cet email existe déjà
+                </p>
+              )}
             </div>
             <div>
               <label className="text-xs font-bold text-gray-600 uppercase mb-1 block">
@@ -142,7 +199,7 @@ const CreateUserModal = ({ onClose, onCreate }) => {
                 Mot de passe *
               </label>
               <input
-                type="password"
+                type="text"
                 value={formData.password}
                 onChange={(e) =>
                   setFormData({ ...formData, password: e.target.value })
@@ -175,20 +232,6 @@ const CreateUserModal = ({ onClose, onCreate }) => {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs font-bold text-gray-600 uppercase mb-1 block">
-                Matricule
-              </label>
-              <input
-                type="text"
-                value={formData.matricule}
-                onChange={(e) =>
-                  setFormData({ ...formData, matricule: e.target.value })
-                }
-                className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none focus:border-indigo-500"
-                placeholder="ex: ESMT-2024-001"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-bold text-gray-600 uppercase mb-1 block">
                 Promotion
               </label>
               <input
@@ -198,7 +241,7 @@ const CreateUserModal = ({ onClose, onCreate }) => {
                   setFormData({ ...formData, promotion: e.target.value })
                 }
                 className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none focus:border-indigo-500"
-                placeholder="ex: L2 Informatique"
+                placeholder="ex: 2025-2026"
               />
             </div>
           </div>
@@ -214,16 +257,26 @@ const CreateUserModal = ({ onClose, onCreate }) => {
         <div className="px-5 py-4 border-t border-gray-100 bg-gray-50 flex gap-3 sticky bottom-0">
           <button
             onClick={onClose}
-            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-sm text-gray-600 border border-gray-200 hover:bg-gray-100 transition-all cursor-pointer"
+            disabled={loading}
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-sm text-gray-600 border border-gray-200 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
           >
             Annuler
           </button>
           <button
             onClick={handleCreate}
-            disabled={!isFormValid}
+            disabled={!isFormValid || loading}
             className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-sm text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
-            <Ic.Plus className="w-4 h-4" /> Créer l'utilisateur
+            {loading ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                Création...
+              </>
+            ) : (
+              <>
+                <Ic.Plus className="w-4 h-4" /> Créer l'utilisateur
+              </>
+            )}
           </button>
         </div>
       </div>

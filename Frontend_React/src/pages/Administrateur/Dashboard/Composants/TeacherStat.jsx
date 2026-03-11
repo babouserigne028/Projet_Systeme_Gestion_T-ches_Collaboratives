@@ -1,64 +1,55 @@
-import { useState } from "react";
-import Avatar from "./Avatar";
-import Badge from "./Badge";
-import { Ic } from "./data/Icones";
-import { TEACHERS } from "./data/Teachers";
+import Avatar from "../../../../composants/Avatar";
+import Badge from "../../../../composants/Badge";
+import { Ic } from "../../../../composants/Icons";
 import ScoreBar from "./ScoreBar";
+import { getInitials } from "../../../../../src/utils/formatters";
+import useFetchStatsEligibleProf from "../../../../../src/services/hooks/utilisateur/useFetchStatsEligibleProf";
 
 const TeacherStat = () => {
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
+  const {
+    response: apiData,
+    loading,
+    error,
+    mois,
+    setMois,
+    annee,
+  } = useFetchStatsEligibleProf();
   const months = [
-    "Jan",
-    "Fév",
-    "Mar",
-    "Avr",
+    "Janvier",
+    "Février",
+    "Mars",
+    "Avril",
     "Mai",
     "Juin",
-    "Juil",
+    "Juillet",
     "Août",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Déc",
+    "Septembre",
+    "Octobre",
+    "Novembre",
+    "Décembre",
   ];
 
-  // Filtrer les profs du mois sélectionné
-  const teachersThisMonth = TEACHERS.filter(
-    (t) => (t.month ?? 0) === selectedMonth,
-  );
-  const displayTeachers =
-    teachersThisMonth.length > 0 ? teachersThisMonth : TEACHERS;
+  // Données de l'API (avec sécurité si vide)
+  const dataToDisplay = apiData || {};
+  const professorsEligible = dataToDisplay.professeurs_eligibles || [];
+  const professorsNotEligible = dataToDisplay.professeurs_non_eligibles || [];
+  const allProfessors = [...professorsEligible, ...professorsNotEligible];
 
-  // Calculer les pourcentages
-  const stats = displayTeachers.map((t) => ({
-    ...t,
-    percentage: Math.round((t.done / t.tasks) * 100),
-  }));
-
-  // Fonction pour calculer la prime
-  const calculateBonus = (percentage) => {
-    if (percentage === 100) return 100000;
-    if (percentage >= 90) return 30000;
-    return 0;
-  };
-
-  // Stats calculées
-  const eligible = stats.filter((t) => t.percentage >= 90).length;
-  const notEligible = stats.filter((t) => t.percentage < 90).length;
-  const avgScore = stats.length
-    ? Math.round(stats.reduce((a, b) => a + b.percentage, 0) / stats.length)
-    : 0;
-
-  // Calculer la prime totale estimée
-  const totalBonus = stats.reduce(
-    (total, t) => total + calculateBonus(t.percentage),
-    0,
-  );
+  // Formater la prime totale
   const formattedBonus = new Intl.NumberFormat("fr-FR", {
     style: "currency",
     currency: "XOF",
     minimumFractionDigits: 0,
-  }).format(totalBonus);
+  }).format(dataToDisplay.cumul_total_primes || 0);
+
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
+        <p className="font-semibold">Erreur</p>
+        <p>{error}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -66,8 +57,8 @@ const TeacherStat = () => {
       <div className="flex items-center gap-3">
         <label className="text-sm font-semibold text-gray-700">Mois :</label>
         <select
-          value={selectedMonth}
-          onChange={(e) => setSelectedMonth(Number(e.target.value))}
+          value={mois}
+          onChange={(e) => setMois(Number(e.target.value))}
           className="px-4 py-2 border border-gray-200 rounded-lg bg-white text-sm font-medium text-gray-700 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           {months.map((month, index) => (
@@ -83,7 +74,7 @@ const TeacherStat = () => {
         {[
           {
             label: "Éligibles à la prime",
-            value: eligible,
+            value: dataToDisplay.nombre_eligibles || 0,
             Icon: Ic.Award,
             color: "text-green-700",
             bg: "bg-green-50",
@@ -91,7 +82,7 @@ const TeacherStat = () => {
           },
           {
             label: "Non éligibles",
-            value: notEligible,
+            value: dataToDisplay.nombre_non_eligibles || 0,
             Icon: Ic.X,
             color: "text-red-700",
             bg: "bg-red-50",
@@ -99,7 +90,7 @@ const TeacherStat = () => {
           },
           {
             label: "Score moyen",
-            value: `${avgScore}%`,
+            value: `${dataToDisplay.pourcentage_moyen || 0}%`,
             Icon: Ic.Bar,
             color: "text-blue-700",
             bg: "bg-blue-50",
@@ -142,7 +133,7 @@ const TeacherStat = () => {
               px-4 sm:px-6 py-4 border-b border-gray-100 bg-gray-50"
         >
           <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-            Performance pour {months[selectedMonth]}
+            Performance pour {months[mois]} {annee}
           </span>
           <Badge color="green">Seuil prime ≥ 90%</Badge>
         </div>
@@ -157,7 +148,6 @@ const TeacherStat = () => {
                   "Professeur",
                   "Complétion",
                   "Tâches",
-                  "Projets",
                   "Prime",
                   "Statut",
                 ].map((h) => (
@@ -172,60 +162,86 @@ const TeacherStat = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {stats.map((t, i) => (
-                <tr key={i} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-4 sm:px-6 py-3.5 text-xs font-bold text-gray-300">
-                    #{i + 1}
-                  </td>
-                  <td className="px-4 sm:px-6 py-3.5">
-                    <div className="flex items-center gap-2.5">
-                      <Avatar ini={t.ini} role="Professeur" sm />
-                      <span className="text-sm font-semibold text-gray-800">
-                        {t.name}
-                      </span>
+              {allProfessors.length === 0 ? (
+                <tr>
+                  <td colSpan="6" className="px-4 sm:px-6 py-8 text-center">
+                    <div className="flex flex-col items-center gap-2">
+                      <Ic.Info className="w-6 h-6 text-gray-300" />
+                      <p className="text-sm text-gray-500 font-medium">
+                        Aucun professeur à afficher pour {months[mois]} {annee}
+                      </p>
                     </div>
                   </td>
-                  <td className="px-4 sm:px-6 py-3.5 min-w-[140px]">
-                    <ScoreBar done={t.done} tasks={t.tasks} />
-                  </td>
-                  <td className="px-4 sm:px-6 py-3.5 text-xs text-gray-400">
-                    {t.done}
-                    <span className="text-gray-200">/{t.tasks}</span>
-                  </td>
-                  <td className="px-4 sm:px-6 py-3.5 text-xs text-gray-400">
-                    {t.projects}
-                  </td>
-                  <td className="px-4 sm:px-6 py-3.5 text-xs font-semibold text-gray-800">
-                    {calculateBonus(t.percentage) > 0 ? (
-                      <span
-                        className={
-                          calculateBonus(t.percentage) === 100000
-                            ? "text-green-600"
-                            : "text-blue-600"
-                        }
-                      >
-                        {new Intl.NumberFormat("fr-FR", {
-                          style: "currency",
-                          currency: "XOF",
-                          minimumFractionDigits: 0,
-                        }).format(calculateBonus(t.percentage))}
-                      </span>
-                    ) : (
-                      <span className="text-gray-400">-</span>
-                    )}
-                  </td>
-                  <td className="px-4 sm:px-6 py-3.5">
-                    {t.percentage >= 90 ? (
-                      <Badge color={t.percentage === 100 ? "green" : "blue"}>
-                        <Ic.Award className="w-3 h-3" />
-                        {t.percentage === 100 ? "100% - 100K" : "90%+ - 30K"}
-                      </Badge>
-                    ) : (
-                      <Badge color="gray">Non éligible</Badge>
-                    )}
-                  </td>
                 </tr>
-              ))}
+              ) : (
+                allProfessors.map((prof, i) => {
+                  const percentage = prof.pourcentage || 0;
+                  return (
+                    <tr
+                      key={prof.id}
+                      className="hover:bg-gray-50 transition-colors"
+                    >
+                      <td className="px-4 sm:px-6 py-3.5 text-xs font-bold text-gray-300">
+                        #{i + 1}
+                      </td>
+                      <td className="px-4 sm:px-6 py-3.5">
+                        <div className="flex items-center gap-2.5">
+                          <Avatar
+                            ini={getInitials(prof.prenom, prof.nom)}
+                            role="Professeur"
+                            photo={prof.photo}
+                            sm
+                          />
+                          <span className="text-sm font-semibold text-gray-800">
+                            {prof.prenom} {prof.nom}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-4 sm:px-6 py-3.5 min-w-[140px]">
+                        <ScoreBar
+                          done={prof.taches_a_temps ?? 0}
+                          tasks={prof.taches_totales ?? 0}
+                        />
+                      </td>
+                      <td className="px-4 sm:px-6 py-3.5 text-xs text-gray-400">
+                        {prof.taches_a_temps}
+                        <span className="text-gray-200">
+                          /{prof.taches_totales}
+                        </span>
+                      </td>
+                      <td className="px-4 sm:px-6 py-3.5 text-xs font-semibold text-gray-800">
+                        {prof.prime > 0 ? (
+                          <span
+                            className={
+                              prof.prime === 100000
+                                ? "text-green-600"
+                                : "text-blue-600"
+                            }
+                          >
+                            {new Intl.NumberFormat("fr-FR", {
+                              style: "currency",
+                              currency: "XOF",
+                              minimumFractionDigits: 0,
+                            }).format(prof.prime)}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </td>
+                      <td className="px-4 sm:px-6 py-3.5">
+                        {percentage >= 90 ? (
+                          <Badge color={percentage === 100 ? "green" : "blue"}>
+                            <Ic.Award className="w-3 h-3" />
+                            {percentage === 100 ? "100% - 100K" : "90%+ - 30K"}
+                          </Badge>
+                        ) : (
+                          <Badge color="gray">Non éligible</Badge>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>

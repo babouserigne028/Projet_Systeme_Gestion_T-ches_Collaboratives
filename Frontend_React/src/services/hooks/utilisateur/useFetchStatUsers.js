@@ -10,9 +10,8 @@ const useFetchStatUsers = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await utilisateurService.getUtilisateursTotal();
+      const response = await utilisateurService.getUtilisateurs();
       setResponse(response);
-      //console.log("response Endpoint: ", response);
     } catch (err) {
       setError(err);
     } finally {

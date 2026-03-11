@@ -22,7 +22,13 @@ const useLogin = () => {
           try {
             const user = await authService.getCurrentUser();
             dispatch(setCurrentUser(user));
-            navigate("/dashboard");
+            const dest =
+              user.role === "professeur"
+                ? "/prof/dashboard"
+                : user.role === "etudiant"
+                  ? "/etu/dashboard"
+                  : "/dashboard";
+            navigate(dest);
             return { success: true, data: { ...response, user } };
           } catch (userErr) {
             setError("Impossible de récupérer l'utilisateur");

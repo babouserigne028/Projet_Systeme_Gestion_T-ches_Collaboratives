@@ -29,7 +29,7 @@ class ApiClient {
       const res = await fetch(fullUrl, {
         ...options,
         headers,
-      })
+      });
       if (!res.ok) {
         let errorData = {};
         try {
@@ -84,6 +84,9 @@ class ApiClient {
         throw error;
       }
 
+      if (res.status === 204) {
+        return null;
+      }
       const data = await res.json();
       return data;
     } catch (err) {
@@ -149,6 +152,38 @@ class ApiClient {
     return this.request(endpoint, {
       method: "DELETE",
       body: data ? JSON.stringify(data) : undefined,
+    });
+  }
+
+  /**
+   * Requête upload (multipart/form-data)
+   * @param {string} endpoint
+   * @param {FormData} formData
+   * @param {string} method
+   * @returns {Promise}
+   */
+  upload(endpoint, formData, method = "PATCH") {
+    const token = sessionStorage.getItem("token");
+    const headers = {
+      Accept: "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    };
+    const fullUrl = buildApiUrl(endpoint);
+    return fetch(fullUrl, {
+      method,
+      headers,
+      body: formData,
+    }).then(async (res) => {
+      if (!res.ok) {
+        let errorData = {};
+        try {
+          errorData = await res.json();
+        } catch {
+          errorData = { detail: res.statusText };
+        }
+        throw new Error(errorData.detail || `HTTP ${res.status}`);
+      }
+      return res.json();
     });
   }
 }

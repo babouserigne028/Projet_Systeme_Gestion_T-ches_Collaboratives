@@ -1,8 +1,7 @@
 import { useState } from "react";
 import CreateUserModal from "./Composants/CreateUserModal";
 import Header from "./Composants/Header";
-import { PENDING } from "./Composants/data/Pending";
-import Toast from "./Composants/Toast";
+import Toast from "../../../composants/Toast";
 import TabsHeader from "./Composants/TabsHeader";
 import Overview from "./Composants/overview";
 import Validation from "./Composants/Validation";
@@ -10,12 +9,14 @@ import TeacherStat from "./Composants/TeacherStat";
 import useFetchStatUsers from "../../../services/hooks/utilisateur/useFetchStatUsers";
 import useFetchListeUserEnAttentDeValidation from "../../../services/hooks/utilisateur/useFetchListeUserEnAttentDeValidation";
 import useApproveUserEnAttente from "../../../services/hooks/utilisateur/useApproveUserEnAttente";
+import useFetchStatsEligibleProf from "../../../services/hooks/utilisateur/useFetchStatsEligibleProf";
+import { useToast } from "../../../services/hooks/useToast";
 
 export default function Dashboard() {
   const [tab, setTab] = useState("overview");
-  const [pending, setPending] = useState(PENDING);
-  const [toast, setToast] = useState(null);
+  const { toast, showToast } = useToast();
   const [createUserModal, setCreateUserModal] = useState(false);
+
   const { response, refresh, loading, error } = useFetchStatUsers();
   const {
     response: responseListeEnAttente,
@@ -23,10 +24,11 @@ export default function Dashboard() {
   } = useFetchListeUserEnAttentDeValidation();
   const { approveUser } = useApproveUserEnAttente();
 
-  const showToast = (msg, type) => {
-    setToast({ msg, type });
-    setTimeout(() => setToast(null), 2800);
-  };
+  const {
+    response: responsefetchStatsEligibleProf,
+    fetchStatsEligibleProf,
+    refreshStatsEligibleProf,
+  } = useFetchStatsEligibleProf();
 
   const approve = async (id, u) => {
     try {
@@ -49,9 +51,13 @@ export default function Dashboard() {
         <CreateUserModal
           onClose={() => setCreateUserModal(false)}
           onCreate={(newUser) => {
-            setPending([...pending, newUser]);
             showToast(`Utilisateur ${newUser.name} créé avec succès`, "ok");
           }}
+          refresh={refresh}
+          fetchListeUserEnAttentDeValidation={
+            fetchListeUserEnAttentDeValidation
+          }
+          refreshStatsEligibleProf={refreshStatsEligibleProf}
         />
       )}
 
@@ -64,7 +70,12 @@ export default function Dashboard() {
           responseListeEnAttente={responseListeEnAttente}
         />
       )}
-      {tab === "teachers" && <TeacherStat />}
+      {tab === "teachers" && (
+        <TeacherStat
+          responsefetchStatsEligibleProf={responsefetchStatsEligibleProf}
+          fetchStatsEligibleProf={fetchStatsEligibleProf}
+        />
+      )}
     </div>
   );
 }

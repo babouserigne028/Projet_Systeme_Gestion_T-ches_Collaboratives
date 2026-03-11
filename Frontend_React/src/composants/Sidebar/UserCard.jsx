@@ -1,8 +1,15 @@
+import { API_URL } from "../../config/api";
+
 /* ─── User Card Component ─────────────────────────────────────── */
 
 function UserCard({ user, isOpen }) {
   const roleName = user?.role;
-  
+  const photoUrl = user?.photo
+    ? user.photo.startsWith("http")
+      ? user.photo
+      : `${API_URL}${user.photo}`
+    : null;
+
   return (
     <div
       className={`flex items-center rounded-xl p-2.5 transition-all duration-300 ${isOpen ? "gap-3" : "justify-center"}`}
@@ -13,22 +20,23 @@ function UserCard({ user, isOpen }) {
     >
       {/* Avatar */}
       <div className="relative shrink-0">
-        {user?.avatar ? (
+        {photoUrl ? (
           <img
-            src={user.avatar}
+            src={photoUrl}
             alt={user?.prenom || "User"}
             className="w-9 h-9 rounded-full object-cover"
             style={{ border: "2px solid rgba(212,175,55,0.6)" }}
           />
         ) : (
-          <div 
+          <div
             className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm"
-            style={{ 
+            style={{
               background: "linear-gradient(135deg, #D4AF37, #f5d060)",
-              border: "2px solid rgba(212,175,55,0.6)" 
+              border: "2px solid rgba(212,175,55,0.6)",
             }}
           >
-            {user?.prenom?.charAt(0)}{user?.nom?.charAt(0)}
+            {user?.prenom?.charAt(0)}
+            {user?.nom?.charAt(0)}
           </div>
         )}
         <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 rounded-full border-2 border-[#1a1a1a]" />

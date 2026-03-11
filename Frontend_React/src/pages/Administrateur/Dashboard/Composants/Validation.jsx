@@ -1,7 +1,7 @@
 import ActionBtn from "./ActionBtn";
-import Avatar from "./Avatar";
-import Badge from "./Badge";
-import { Ic } from "./data/Icones";
+import Avatar from "../../../../composants/Avatar";
+import Badge from "../../../../composants/Badge";
+import { Ic } from "../../../../composants/Icons";
 import { getInitials } from "../../../../../src/utils/formatters";
 import { formatDate } from "../../../../utils/formatDate";
 
@@ -65,6 +65,7 @@ const Validation = ({ approve, responseListeEnAttente }) => {
                       <Avatar
                         ini={getInitials(u.prenom, u.nom)}
                         role={u.role}
+                        photo={u.photo}
                       />
                       <span className="text-sm font-semibold text-gray-800">
                         {u.prenom} {u.nom}

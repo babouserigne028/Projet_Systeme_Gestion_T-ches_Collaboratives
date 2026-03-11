@@ -1,6 +1,12 @@
 const ScoreBar = ({ done, tasks }) => {
-  const pct = (done / tasks) * 100;
+  // Sécuriser les valeurs : utiliser 0 si undefined/null
+  const safeDone = done ?? 0;
+  const safeTasks = tasks ?? 0;
+
+  // Éviter la division par zéro et NaN
+  const pct = safeTasks > 0 ? (safeDone / safeTasks) * 100 : 0;
   const col = pct >= 80 ? "#16A34A" : pct >= 65 ? "#D97706" : "#DC2626";
+
   return (
     <div className="flex items-center gap-2 flex-1">
       <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">

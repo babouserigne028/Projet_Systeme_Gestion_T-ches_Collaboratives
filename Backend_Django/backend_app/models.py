@@ -17,6 +17,7 @@ class Utilisateur(AbstractUser):
 	role = models.CharField(max_length=20, choices=ROLE_CHOICES)
 	matricule = models.CharField(max_length=50, blank=True)
 	promotion = models.CharField(max_length=50, blank=True)
+	photo = models.ImageField(upload_to='photos/', blank=True, null=True)
 	is_active = models.BooleanField(default=False)
 
 	USERNAME_FIELD = 'email'
@@ -24,6 +25,13 @@ class Utilisateur(AbstractUser):
 
 	def __str__(self):
 		return f"{self.nom} {self.prenom} ({self.role})"
+
+	def save(self, *args, **kwargs):
+		if not self.matricule:
+			# Génère automatiquement le matricule
+			count = Utilisateur.objects.filter(role=self.role).count()
+			self.matricule = f"{self.role.upper()}-{count + 1:03d}"
+		super().save(*args, **kwargs)
 
 
 # Table projets
@@ -54,7 +62,35 @@ class Tache(models.Model):
 	statut = models.CharField(max_length=20, choices=STATUT_CHOICES, default='a_faire')
 	projet = models.ForeignKey(Projet, on_delete=models.CASCADE)
 	assigne_a = models.ForeignKey(Utilisateur, on_delete=models.CASCADE, related_name='taches_assignees')
-	date_echeance = models.DateField()
+	date_echeance = models.DateTimeField()
+	date_completion = models.DateTimeField(null=True, blank=True)
 
 	def __str__(self):
 		return f"{self.titre} ({self.statut})"
+
+
+# Table messages (chat par projet)
+class Message(models.Model):
+	projet = models.ForeignKey(Projet, on_delete=models.CASCADE, related_name='messages')
+	auteur = models.ForeignKey(Utilisateur, on_delete=models.CASCADE, related_name='messages_envoyes')
+	contenu = models.TextField()
+	date_envoi = models.DateTimeField(auto_now_add=True)
+
+	class Meta:
+		ordering = ['date_envoi']
+
+	def __str__(self):
+		return f"{self.auteur.prenom} dans {self.projet.titre}: {self.contenu[:30]}"
+
+
+# Dernière lecture du chat par utilisateur/projet
+class DerniereLecture(models.Model):
+	user = models.ForeignKey(Utilisateur, on_delete=models.CASCADE, related_name='dernieres_lectures')
+	projet = models.ForeignKey(Projet, on_delete=models.CASCADE, related_name='dernieres_lectures')
+	date_lecture = models.DateTimeField(auto_now=True)
+
+	class Meta:
+		unique_together = ('user', 'projet')
+
+	def __str__(self):
+		return f"{self.user.prenom} - {self.projet.titre}"

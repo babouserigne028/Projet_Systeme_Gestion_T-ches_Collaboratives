@@ -29,8 +29,8 @@ export default function Register() {
     password: "",
     confirmPassword: "",
     role: "",
-    matricule: "",
     promotion: "",
+    photo: null,
     acceptTerms: false,
   });
   const [errors, setErrors] = useState({});
@@ -61,7 +61,6 @@ export default function Register() {
     }
     if (s === 3) {
       if (!form.role) e.role = "Veuillez choisir un rôle.";
-      if (!form.matricule.trim()) e.matricule = "Le matricule est requis.";
       if (!form.promotion.trim()) e.promotion = "La promotion est requise.";
       if (!form.acceptTerms)
         e.acceptTerms = "Vous devez accepter les conditions.";
@@ -91,17 +90,16 @@ export default function Register() {
       setErrors(errs);
       return;
     }
-    const userData = {
-      email: form.email,
-      password: form.password,
-      nom: form.nom,
-      prenom: form.prenom,
-      telephone: form.telephone,
-      role: form.role,
-      matricule: form.matricule,
-      promotion: form.promotion,
-    };
-    const res = await register(userData);
+    const formData = new FormData();
+    formData.append("email", form.email);
+    formData.append("password", form.password);
+    formData.append("nom", form.nom);
+    formData.append("prenom", form.prenom);
+    formData.append("telephone", form.telephone);
+    formData.append("role", form.role);
+    formData.append("promotion", form.promotion);
+    if (form.photo) formData.append("photo", form.photo);
+    const res = await register(formData);
     if (res) setSubmitted(true);
   };
 

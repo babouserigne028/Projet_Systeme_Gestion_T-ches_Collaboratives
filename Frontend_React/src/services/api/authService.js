@@ -9,8 +9,8 @@ export const authService = {
     return apiClient.post("/api/check-email/", { email });
   },
 
-  register: (userData) => {
-    return apiClient.post("/api/register/", userData);
+  register: (formData) => {
+    return apiClient.upload("/api/register/", formData, "POST");
   },
 
   getCurrentUser: () => {

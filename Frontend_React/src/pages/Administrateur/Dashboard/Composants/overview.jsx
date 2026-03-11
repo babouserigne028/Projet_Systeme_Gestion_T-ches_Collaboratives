@@ -1,4 +1,4 @@
-import { Ic } from "./data/Icones";
+import { Ic } from "../../../../composants/Icons";
 import KpiCard from "./KpiCard";
 
 const Overview = ({ response }) => {

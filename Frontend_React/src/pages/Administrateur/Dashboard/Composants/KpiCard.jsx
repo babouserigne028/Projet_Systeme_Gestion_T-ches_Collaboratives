@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import sparkPath from "./SparkPath";
 import { SPARKS } from "./data/Sparks";
-import { Ic } from "./data/Icones";
+import { Ic } from "../../../../composants/Icons";
 
 const KpiCard = ({
   label,

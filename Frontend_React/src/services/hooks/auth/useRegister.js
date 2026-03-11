@@ -12,7 +12,9 @@ const useRegister = () => {
       const response = await authService.register(userData);
       return response;
     } catch (err) {
-      setError(err);
+      // Capturer les erreurs Django (err.response.data) ou message générique
+      const errorData = err.response?.data || { error: err.message };
+      setError(errorData);
       return null;
     } finally {
       setLoading(false);

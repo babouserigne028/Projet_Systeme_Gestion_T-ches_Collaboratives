@@ -8,17 +8,17 @@ export const MENUS = {
     { to: "/profil", icon: "profile", label: "Mon Profil" },
   ],
   professeur: [
-    { to: "/dashboard", icon: "dashboard", label: "Dashboard" },
-    { to: "/mesprojets", icon: "folder", label: "Mes Projets" },
-    { to: "/mestaches", icon: "tasks", label: "Mes Tâches" },
-    { to: "/statistiques", icon: "chart", label: "Statistiques" },
+    { to: "/prof/dashboard", icon: "dashboard", label: "Dashboard" },
+    { to: "/prof/mesprojets", icon: "folder", label: "Mes Projets" },
+    { to: "/prof/mestaches", icon: "tasks", label: "Mes Tâches" },
+    { to: "/prof/statistiques", icon: "chart", label: "Statistiques" },
     { to: "/profil", icon: "profile", label: "Mon Profil" },
   ],
   etudiant: [
-    { to: "/dashboard", icon: "dashboard", label: "Dashboard" },
-    { to: "/mesprojets", icon: "folder", label: "Mes Projets" },
-    { to: "/mestaches", icon: "tasks", label: "Mes Tâches" },
-    { to: "/monprofil", icon: "profile", label: "Mon Profil" },
+    { to: "/etu/dashboard", icon: "dashboard", label: "Dashboard" },
+    { to: "/etu/mesprojets", icon: "folder", label: "Mes Projets" },
+    { to: "/etu/mestaches", icon: "tasks", label: "Mes Tâches" },
+    { to: "/profil", icon: "profile", label: "Mon Profil" },
   ],
 };
 
