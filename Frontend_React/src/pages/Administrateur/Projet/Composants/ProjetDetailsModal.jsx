@@ -47,7 +47,9 @@ export default function ProjetDetailsModal({
       : 0;
 
   const collabIds = (projet.collaborateurs || []).map((c) => c.user?.id);
-  const availableUsers = allUsers.filter((u) => !collabIds.includes(u.id));
+  const availableUsers = allUsers.filter(
+    (u) => !collabIds.includes(u.id) && u.role !== "administrateur",
+  );
   const filteredAvailable = availableUsers.filter((u) => {
     const q = collabSearch.toLowerCase();
     return (

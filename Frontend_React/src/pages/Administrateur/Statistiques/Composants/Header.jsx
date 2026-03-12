@@ -6,15 +6,16 @@ const PERIODS = [
   { id: "annee", label: "Année" },
 ];
 
-const Header = ({ period, setPeriod, totalProfs }) => (
+const Header = ({ period, setPeriod, totalProfs, isPersonal }) => (
   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
     <div>
       <h1 className="text-xl sm:text-2xl font-extrabold text-gray-900 tracking-tight">
-        Statistiques Professeurs
+        {isPersonal ? "Mes Statistiques" : "Statistiques Professeurs"}
       </h1>
       <p className="text-xs sm:text-sm text-gray-400 mt-0.5 font-medium">
-        Suivi de performance · Attribution des primes · {totalProfs} professeurs
-        actifs
+        {isPersonal
+          ? "Suivi de ma performance · Éligibilité prime"
+          : `Suivi de performance · Attribution des primes · ${totalProfs} professeurs actifs`}
       </p>
     </div>
     <div className="flex items-center gap-2 self-start sm:self-auto">

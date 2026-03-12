@@ -56,7 +56,7 @@ export default function MesProjets() {
     refresh();
   }, []);
 
-  // Filtrer : uniquement les projets du professeur (créateur ou collaborateur)
+  // Filtrer : projets créés par le professeur + projets supervisés (collaborateur)
   const mesProjets = useMemo(() => {
     if (!projets || !currentUser) return [];
     return projets.filter((p) => {
@@ -67,6 +67,11 @@ export default function MesProjets() {
       return isCreateur || isCollab;
     });
   }, [projets, currentUser]);
+
+  // Détermine si le professeur est en lecture seule sur un projet (superviseur)
+  const isReadOnly = (projet) => {
+    return projet.createur !== currentUser?.id;
+  };
 
   const projetStats = useMemo(() => {
     const total = mesProjets.length;
@@ -229,18 +234,21 @@ export default function MesProjets() {
         <ProjetDetailsModal
           projet={selectedProjet}
           onClose={() => setSelectedProjet(null)}
-          onDelete={handleDeleteProjet}
+          onDelete={isReadOnly(selectedProjet) ? null : handleDeleteProjet}
           onRefresh={refresh}
-          onAddCollab={handleAddCollab}
-          onRemoveCollab={handleRemoveCollab}
-          onCreateTache={handleCreateTache}
-          onUpdateTache={handleUpdateTache}
-          onDeleteTache={handleDeleteTache}
-          onEditProjet={handleEditProjet}
+          onAddCollab={isReadOnly(selectedProjet) ? null : handleAddCollab}
+          onRemoveCollab={
+            isReadOnly(selectedProjet) ? null : handleRemoveCollab
+          }
+          onCreateTache={isReadOnly(selectedProjet) ? null : handleCreateTache}
+          onUpdateTache={isReadOnly(selectedProjet) ? null : handleUpdateTache}
+          onDeleteTache={isReadOnly(selectedProjet) ? null : handleDeleteTache}
+          onEditProjet={isReadOnly(selectedProjet) ? null : handleEditProjet}
           allUsers={allUsers.filter((u) => u.is_active)}
           addCollabLoading={addCollabLoading}
           createTacheLoading={createTacheLoading}
           onMarkRead={markAsRead}
+          readOnly={isReadOnly(selectedProjet)}
         />
       )}
 
@@ -280,6 +288,7 @@ export default function MesProjets() {
               projet={projet}
               onClick={() => setSelectedProjet(projet)}
               unreadCount={unreadCounts[String(projet.id)] || 0}
+              isSuperviseur={isReadOnly(projet)}
             />
           ))}
         </div>

@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useSelector } from "react-redux";
 import { useFetchTaches } from "../../../services/hooks/tache";
 import { useUpdateTache } from "../../../services/hooks/tache";
-import { useToast } from "../../../services/hooks/useToast";
+import { useToastGlobal } from "../../../services/context/ToastContext";
 import { Ic } from "../../../composants/Icons";
 import Avatar from "../../../composants/Avatar";
 
@@ -41,10 +41,10 @@ const daysLeft = (d) => {
 };
 
 export default function MesTaches() {
-  const currentUser = useSelector((s) => s.user.user);
+  const currentUser = useSelector((s) => s.user.currentUser);
   const { response: allTaches, loading, fetchTaches } = useFetchTaches();
   const { updateTache } = useUpdateTache();
-  const toast = useToast();
+  const { showToast } = useToastGlobal();
 
   const [statusFilter, setStatusFilter] = useState("toutes");
   const [search, setSearch] = useState("");
@@ -99,14 +99,15 @@ export default function MesTaches() {
           ? { date_completion: new Date().toISOString() }
           : { date_completion: null }),
       });
-      toast.success(
+      showToast(
         newStatut === "termine"
           ? "Tâche marquée comme terminée"
           : "Tâche réouverte",
+        "ok",
       );
       fetchTaches();
     } catch {
-      toast.error("Erreur lors de la mise à jour");
+      showToast("Erreur lors de la mise à jour", "error");
     }
   };
 

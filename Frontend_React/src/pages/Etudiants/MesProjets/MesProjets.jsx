@@ -55,16 +55,10 @@ export default function MesProjets() {
     refresh();
   }, []);
 
-  // Filtrer : projets de l'étudiant (créateur ou collaborateur)
+  // Filtrer : uniquement les projets créés par l'étudiant
   const mesProjets = useMemo(() => {
     if (!projets || !currentUser) return [];
-    return projets.filter((p) => {
-      const isCreateur = p.createur === currentUser.id;
-      const isCollab = (p.collaborateurs || []).some(
-        (c) => c.user?.id === currentUser.id,
-      );
-      return isCreateur || isCollab;
-    });
+    return projets.filter((p) => p.createur === currentUser.id);
   }, [projets, currentUser]);
 
   const projetStats = useMemo(() => {

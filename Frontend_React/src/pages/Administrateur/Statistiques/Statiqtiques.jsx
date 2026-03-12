@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useSelector } from "react-redux";
 import useFetchStatistiquesProfs from "../../../services/hooks/statistique/useFetchStatistiquesProfs";
 import Header from "./Composants/Header";
 import KpiStrip from "./Composants/KpiStrip";
@@ -20,6 +21,8 @@ import {
 export default function Statistiques() {
   const [period, setPeriod] = useState("annee");
   const [selectedT, setSelectedT] = useState(null);
+  const currentUser = useSelector((s) => s.user.currentUser);
+  const isPersonal = currentUser?.role === "professeur";
 
   const { response, loading, error } = useFetchStatistiquesProfs();
 
@@ -75,6 +78,7 @@ export default function Statistiques() {
         period={period}
         setPeriod={setPeriod}
         totalProfs={response?.resume?.total_profs || 0}
+        isPersonal={isPersonal}
       />
 
       <KpiStrip resume={response?.resume} />

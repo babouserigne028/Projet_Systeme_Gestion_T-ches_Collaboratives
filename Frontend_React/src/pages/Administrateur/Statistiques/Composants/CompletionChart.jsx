@@ -21,7 +21,7 @@ const CompletionChart = ({ completionData }) => {
             Taux de complétion mensuel
           </h3>
           <p className="text-xs text-gray-400 font-medium mt-0.5">
-            Moyenne toute l'équipe · ligne cible 80%
+            Moyenne toute l'équipe · ligne cible 90%
           </p>
         </div>
         <span className="text-xs font-semibold text-green-700 bg-green-50 border border-green-200 rounded-full px-2.5 py-1">
@@ -54,7 +54,7 @@ const CompletionChart = ({ completionData }) => {
           />
           <Tooltip content={<CustomTooltip />} />
           <ReferenceLine
-            y={80}
+            y={90}
             stroke="#EAB308"
             strokeDasharray="5 3"
             strokeWidth={1.5}

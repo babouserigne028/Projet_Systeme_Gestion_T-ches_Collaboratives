@@ -1,7 +1,12 @@
 import { Ic } from "../../../../composants/Icons";
 import Avatar from "../../../../composants/Avatar";
 
-export default function ProjetCard({ projet, onClick, unreadCount = 0 }) {
+export default function ProjetCard({
+  projet,
+  onClick,
+  unreadCount = 0,
+  isSuperviseur = false,
+}) {
   const pourcentageTaches =
     projet.nombre_taches > 0
       ? Math.round(
@@ -39,6 +44,11 @@ export default function ProjetCard({ projet, onClick, unreadCount = 0 }) {
             <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-indigo-600 text-white text-[10px] font-bold animate-pulse">
               <Ic.MessageCircle className="w-3 h-3" />
               {unreadCount}
+            </span>
+          )}
+          {isSuperviseur && (
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md whitespace-nowrap bg-purple-100 text-purple-700">
+              Superviseur
             </span>
           )}
           <span

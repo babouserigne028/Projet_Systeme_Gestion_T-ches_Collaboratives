@@ -78,7 +78,7 @@ const utilisateurService = {
    */
   getStatistiquesEligibiliteProf: (mois, annee) => {
     return apiClient.post(`/api/professeurs/eligible-for-prime/`, {
-      mois,
+      mois: mois + 1,
       annee,
     });
   },

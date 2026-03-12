@@ -18,6 +18,7 @@ export default function ProjetDetailsModal({
   addCollabLoading,
   createTacheLoading,
   onMarkRead,
+  readOnly = false,
 }) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [collabSearch, setCollabSearch] = useState("");
@@ -47,7 +48,9 @@ export default function ProjetDetailsModal({
       : 0;
 
   const collabIds = (projet.collaborateurs || []).map((c) => c.user?.id);
-  const availableUsers = allUsers.filter((u) => !collabIds.includes(u.id));
+  const availableUsers = allUsers.filter(
+    (u) => !collabIds.includes(u.id) && u.role !== "administrateur",
+  );
   const filteredAvailable = availableUsers.filter((u) => {
     const q = collabSearch.toLowerCase();
     return (
@@ -221,7 +224,7 @@ export default function ProjetDetailsModal({
                       <h3 className="text-lg font-semibold text-gray-900 truncate">
                         {projet.titre}
                       </h3>
-                      {onEditProjet && (
+                      {onEditProjet && !readOnly && (
                         <button
                           onClick={() => setEditing(true)}
                           className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 hover:text-indigo-600 transition-colors cursor-pointer shrink-0"
@@ -390,52 +393,54 @@ export default function ProjetDetailsModal({
             {/* Collaborateurs */}
             {activeTab === "collaborateurs" && (
               <>
-                <div>
-                  <span className="text-xs font-bold text-gray-600 uppercase block mb-2">
-                    Ajouter un participant
-                  </span>
-                  <div className="relative">
-                    <Ic.Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-                    <input
-                      type="text"
-                      value={collabSearch}
-                      onChange={(e) => setCollabSearch(e.target.value)}
-                      placeholder="Rechercher un utilisateur..."
-                      className="w-full text-sm border border-gray-200 rounded-lg pl-9 pr-3 py-2 outline-none focus:border-indigo-500 transition-colors"
-                    />
-                  </div>
-                  {collabSearch && filteredAvailable.length > 0 && (
-                    <div className="border border-gray-200 rounded-lg max-h-32 overflow-y-auto mt-1">
-                      {filteredAvailable.slice(0, 6).map((u) => (
-                        <button
-                          key={u.id}
-                          type="button"
-                          onClick={() => handleAddCollab(u.id)}
-                          disabled={addCollabLoading}
-                          className="w-full flex items-center gap-2 px-3 py-2 hover:bg-indigo-50 text-left text-sm transition-colors cursor-pointer disabled:opacity-50"
-                        >
-                          <Avatar
-                            ini={`${u.prenom?.[0] || ""}${u.nom?.[0] || ""}`}
-                            role={u.role}
-                            photo={u.photo}
-                            sm
-                          />
-                          <span className="font-medium text-gray-700">
-                            {u.prenom} {u.nom}
-                          </span>
-                          <span className="text-xs text-gray-400 ml-auto capitalize">
-                            {u.role}
-                          </span>
-                        </button>
-                      ))}
+                {!readOnly && (
+                  <div>
+                    <span className="text-xs font-bold text-gray-600 uppercase block mb-2">
+                      Ajouter un participant
+                    </span>
+                    <div className="relative">
+                      <Ic.Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                      <input
+                        type="text"
+                        value={collabSearch}
+                        onChange={(e) => setCollabSearch(e.target.value)}
+                        placeholder="Rechercher un utilisateur..."
+                        className="w-full text-sm border border-gray-200 rounded-lg pl-9 pr-3 py-2 outline-none focus:border-indigo-500 transition-colors"
+                      />
                     </div>
-                  )}
-                  {collabSearch && filteredAvailable.length === 0 && (
-                    <p className="text-xs text-gray-400 mt-1">
-                      Aucun utilisateur disponible
-                    </p>
-                  )}
-                </div>
+                    {collabSearch && filteredAvailable.length > 0 && (
+                      <div className="border border-gray-200 rounded-lg max-h-32 overflow-y-auto mt-1">
+                        {filteredAvailable.slice(0, 6).map((u) => (
+                          <button
+                            key={u.id}
+                            type="button"
+                            onClick={() => handleAddCollab(u.id)}
+                            disabled={addCollabLoading}
+                            className="w-full flex items-center gap-2 px-3 py-2 hover:bg-indigo-50 text-left text-sm transition-colors cursor-pointer disabled:opacity-50"
+                          >
+                            <Avatar
+                              ini={`${u.prenom?.[0] || ""}${u.nom?.[0] || ""}`}
+                              role={u.role}
+                              photo={u.photo}
+                              sm
+                            />
+                            <span className="font-medium text-gray-700">
+                              {u.prenom} {u.nom}
+                            </span>
+                            <span className="text-xs text-gray-400 ml-auto capitalize">
+                              {u.role}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {collabSearch && filteredAvailable.length === 0 && (
+                      <p className="text-xs text-gray-400 mt-1">
+                        Aucun utilisateur disponible
+                      </p>
+                    )}
+                  </div>
+                )}
                 <div>
                   <span className="text-xs font-bold text-gray-600 uppercase block mb-2">
                     Membres actuels ({projet.collaborateurs?.length || 0})
@@ -463,13 +468,15 @@ export default function ProjetDetailsModal({
                           <span className="text-[10px] text-gray-400 capitalize px-2 py-0.5 bg-white rounded border border-gray-200">
                             {c.user?.role}
                           </span>
-                          <button
-                            type="button"
-                            onClick={() => onRemoveCollab(projet.id, c.id)}
-                            className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-red-100 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
-                          >
-                            <Ic.X className="w-3.5 h-3.5" />
-                          </button>
+                          {!readOnly && (
+                            <button
+                              type="button"
+                              onClick={() => onRemoveCollab(projet.id, c.id)}
+                              className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-red-100 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
+                            >
+                              <Ic.X className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -486,57 +493,64 @@ export default function ProjetDetailsModal({
             {/* Tâches */}
             {activeTab === "taches" && (
               <>
-                <div>
-                  <span className="text-xs font-bold text-gray-600 uppercase block mb-2">
-                    Nouvelle tâche
-                  </span>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                    <input
-                      type="text"
-                      value={newTache.titre}
-                      onChange={(e) =>
-                        setNewTache({ ...newTache, titre: e.target.value })
-                      }
-                      placeholder="Titre de la tâche"
-                      className="text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none focus:border-indigo-500 transition-colors"
-                    />
-                    <select
-                      value={newTache.assigne_a}
-                      onChange={(e) =>
-                        setNewTache({ ...newTache, assigne_a: e.target.value })
-                      }
-                      className="text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none focus:border-indigo-500 transition-colors"
-                    >
-                      <option value="">Assigner à...</option>
-                      {(projet.collaborateurs || []).map((c) => (
-                        <option key={c.user?.id} value={c.user?.id}>
-                          {c.user?.prenom} {c.user?.nom}
-                        </option>
-                      ))}
-                    </select>
-                    <div className="flex gap-2">
+                {!readOnly && (
+                  <div>
+                    <span className="text-xs font-bold text-gray-600 uppercase block mb-2">
+                      Nouvelle tâche
+                    </span>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                       <input
-                        type="date"
-                        value={newTache.date_echeance}
+                        type="text"
+                        value={newTache.titre}
+                        onChange={(e) =>
+                          setNewTache({ ...newTache, titre: e.target.value })
+                        }
+                        placeholder="Titre de la tâche"
+                        className="text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none focus:border-indigo-500 transition-colors"
+                      />
+                      <select
+                        value={newTache.assigne_a}
                         onChange={(e) =>
                           setNewTache({
                             ...newTache,
-                            date_echeance: e.target.value,
+                            assigne_a: e.target.value,
                           })
                         }
-                        className="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none focus:border-indigo-500 transition-colors"
-                      />
-                      <button
-                        type="button"
-                        onClick={handleAddTache}
-                        disabled={!newTache.titre.trim() || createTacheLoading}
-                        className="px-3 py-2 bg-indigo-100 text-indigo-600 rounded-lg hover:bg-indigo-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                        className="text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none focus:border-indigo-500 transition-colors"
                       >
-                        <Ic.Plus className="w-4 h-4" />
-                      </button>
+                        <option value="">Assigner à...</option>
+                        {(projet.collaborateurs || []).map((c) => (
+                          <option key={c.user?.id} value={c.user?.id}>
+                            {c.user?.prenom} {c.user?.nom}
+                          </option>
+                        ))}
+                      </select>
+                      <div className="flex gap-2">
+                        <input
+                          type="date"
+                          value={newTache.date_echeance}
+                          onChange={(e) =>
+                            setNewTache({
+                              ...newTache,
+                              date_echeance: e.target.value,
+                            })
+                          }
+                          className="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none focus:border-indigo-500 transition-colors"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleAddTache}
+                          disabled={
+                            !newTache.titre.trim() || createTacheLoading
+                          }
+                          className="px-3 py-2 bg-indigo-100 text-indigo-600 rounded-lg hover:bg-indigo-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                        >
+                          <Ic.Plus className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
                 {projet.taches?.length > 0 && (
                   <div className="flex gap-2">
                     {[
@@ -578,18 +592,32 @@ export default function ProjetDetailsModal({
                           key={tache.id}
                           className="flex items-center gap-2 px-3 py-2.5 bg-gray-50 rounded-lg border border-gray-200 group"
                         >
-                          <button
-                            onClick={() => handleToggleTache(tache)}
-                            className={`w-5 h-5 rounded border-2 shrink-0 flex items-center justify-center transition-colors cursor-pointer ${
-                              tache.statut === "termine"
-                                ? "bg-green-500 border-green-500 text-white"
-                                : "border-gray-300 hover:border-indigo-400"
-                            }`}
-                          >
-                            {tache.statut === "termine" && (
-                              <Ic.Check className="w-3 h-3" />
-                            )}
-                          </button>
+                          {readOnly ? (
+                            <div
+                              className={`w-5 h-5 rounded border-2 shrink-0 flex items-center justify-center ${
+                                tache.statut === "termine"
+                                  ? "bg-green-500 border-green-500 text-white"
+                                  : "border-gray-300"
+                              }`}
+                            >
+                              {tache.statut === "termine" && (
+                                <Ic.Check className="w-3 h-3" />
+                              )}
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => handleToggleTache(tache)}
+                              className={`w-5 h-5 rounded border-2 shrink-0 flex items-center justify-center transition-colors cursor-pointer ${
+                                tache.statut === "termine"
+                                  ? "bg-green-500 border-green-500 text-white"
+                                  : "border-gray-300 hover:border-indigo-400"
+                              }`}
+                            >
+                              {tache.statut === "termine" && (
+                                <Ic.Check className="w-3 h-3" />
+                              )}
+                            </button>
+                          )}
                           <div className="flex-1 min-w-0">
                             <p
                               className={`text-sm font-medium truncate ${tache.statut === "termine" ? "line-through text-gray-400" : "text-gray-700"}`}
@@ -625,13 +653,15 @@ export default function ProjetDetailsModal({
                           >
                             {tache.statut === "termine" ? "Terminé" : "À faire"}
                           </span>
-                          <button
-                            type="button"
-                            onClick={() => onDeleteTache(tache.id)}
-                            className="w-6 h-6 flex items-center justify-center rounded hover:bg-red-100 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
-                          >
-                            <Ic.Trash className="w-3 h-3" />
-                          </button>
+                          {!readOnly && (
+                            <button
+                              type="button"
+                              onClick={() => onDeleteTache(tache.id)}
+                              className="w-6 h-6 flex items-center justify-center rounded hover:bg-red-100 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
+                            >
+                              <Ic.Trash className="w-3 h-3" />
+                            </button>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -655,18 +685,25 @@ export default function ProjetDetailsModal({
 
           {/* Footer */}
           <div className="px-5 py-4 border-t border-gray-100 bg-gray-50 flex gap-3 shrink-0">
+            {readOnly && (
+              <span className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 border border-amber-200 text-amber-700 rounded-xl text-xs font-bold">
+                <Ic.Eye className="w-3.5 h-3.5" /> Superviseur · Lecture seule
+              </span>
+            )}
             <button
               onClick={onClose}
               className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-sm text-gray-600 border border-gray-200 hover:bg-gray-100 transition-all cursor-pointer"
             >
               Fermer
             </button>
-            <button
-              onClick={() => setShowDeleteConfirm(true)}
-              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-sm text-white bg-red-600 hover:bg-red-700 transition-all cursor-pointer"
-            >
-              <Ic.Trash className="w-4 h-4" /> Supprimer
-            </button>
+            {!readOnly && (
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-sm text-white bg-red-600 hover:bg-red-700 transition-all cursor-pointer"
+              >
+                <Ic.Trash className="w-4 h-4" /> Supprimer
+              </button>
+            )}
           </div>
         </div>
       </div>

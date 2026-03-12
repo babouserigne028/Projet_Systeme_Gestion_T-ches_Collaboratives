@@ -226,7 +226,7 @@ class EligibleProfessorsForPrimeView(APIView):
         mois = request.data.get('mois')
         annee = request.data.get('annee')
         
-        if not mois or not annee:
+        if mois is None or annee is None:
             return Response(
                 {"error": "Paramètres 'mois' et 'annee' requis."}, 
                 status=status.HTTP_400_BAD_REQUEST
@@ -253,7 +253,7 @@ class EligibleProfessorsForPrimeView(APIView):
         cumul_primes = 0
         
         for prof in professeurs:
-            # Total des tâches assignées ce mois
+            # Total des tâches assignées à ce prof ce mois
             taches_totales = Tache.objects.filter(
                 assigne_a=prof,
                 date_echeance__month=mois,
@@ -266,7 +266,7 @@ class EligibleProfessorsForPrimeView(APIView):
                 statut='termine',
                 date_echeance__month=mois,
                 date_echeance__year=annee,
-                date_completion__lte=models.F('date_echeance')  # Marquée avant l'échéance
+                date_completion__lte=models.F('date_echeance')
             ).count()
             
             # Calcul du pourcentage
@@ -321,7 +321,17 @@ class ProjetListCreateView(APIView):
     permission_classes = [IsAuthenticated]
     
     def get(self, request):
-        projets = Projet.objects.all()
+        user = request.user
+        if user.role == 'administrateur':
+            projets = Projet.objects.all()
+        elif user.role == 'professeur':
+            # Professeur : projets créés + projets supervisés (ajouté comme collaborateur)
+            projets = Projet.objects.filter(
+                Q(createur=user) | Q(collaborateur__user=user)
+            ).distinct()
+        else:
+            # Étudiants : uniquement les projets qu'ils ont créés
+            projets = Projet.objects.filter(createur=user)
         serializer = ProjetSerializer(projets, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
@@ -356,7 +366,9 @@ class ProjetDetailView(APIView):
         projet = self.get_projet(projet_id)
         if not projet:
             return Response({"error": "Projet non trouvé"}, status=status.HTTP_404_NOT_FOUND)
-        
+        # Seul le créateur ou un admin peut modifier
+        if request.user.role != 'administrateur' and projet.createur != request.user:
+            return Response({"error": "Vous n'êtes pas autorisé à modifier ce projet"}, status=status.HTTP_403_FORBIDDEN)
         serializer = ProjetSerializer(projet, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
@@ -367,7 +379,9 @@ class ProjetDetailView(APIView):
         projet = self.get_projet(projet_id)
         if not projet:
             return Response({"error": "Projet non trouvé"}, status=status.HTTP_404_NOT_FOUND)
-        
+        # Seul le créateur ou un admin peut supprimer
+        if request.user.role != 'administrateur' and projet.createur != request.user:
+            return Response({"error": "Vous n'êtes pas autorisé à supprimer ce projet"}, status=status.HTTP_403_FORBIDDEN)
         projet.delete()
         return Response({"message": "Projet supprimé avec succès"}, status=status.HTTP_204_NO_CONTENT)
 
@@ -382,6 +396,10 @@ class CollaborateurAddView(APIView):
         except Projet.DoesNotExist:
             return Response({"error": "Projet non trouvé"}, status=status.HTTP_404_NOT_FOUND)
         
+        # Seul le créateur ou un admin peut ajouter des collaborateurs
+        if request.user.role != 'administrateur' and projet.createur != request.user:
+            return Response({"error": "Vous n'êtes pas autorisé à gérer les collaborateurs"}, status=status.HTTP_403_FORBIDDEN)
+        
         user_id = request.data.get('user_id')
         if not user_id:
             return Response({"error": "user_id requis"}, status=status.HTTP_400_BAD_REQUEST)
@@ -390,6 +408,10 @@ class CollaborateurAddView(APIView):
             user = Utilisateur.objects.get(id=user_id)
         except Utilisateur.DoesNotExist:
             return Response({"error": "Utilisateur non trouvé"}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Un administrateur ne peut pas être ajouté comme collaborateur
+        if user.role == 'administrateur':
+            return Response({"error": "Un administrateur ne peut pas être ajouté comme collaborateur"}, status=status.HTTP_400_BAD_REQUEST)
         
         # Vérifier si déjà collaborateur
         if Collaborateur.objects.filter(projet=projet, user=user).exists():
@@ -410,6 +432,11 @@ class CollaborateurRemoveView(APIView):
         except Collaborateur.DoesNotExist:
             return Response({"error": "Collaborateur non trouvé"}, status=status.HTTP_404_NOT_FOUND)
         
+        # Seul le créateur ou un admin peut retirer des collaborateurs
+        projet = collab.projet
+        if request.user.role != 'administrateur' and projet.createur != request.user:
+            return Response({"error": "Vous n'êtes pas autorisé à gérer les collaborateurs"}, status=status.HTTP_403_FORBIDDEN)
+        
         collab.delete()
         return Response({"message": "Collaborateur retiré avec succès"}, status=status.HTTP_204_NO_CONTENT)
 
@@ -423,17 +450,37 @@ class TacheListCreateView(APIView):
     permission_classes = [IsAuthenticated]
     
     def get(self, request):
+        user = request.user
         # Filtrer par projet si projet_id fourni
         projet_id = request.query_params.get('projet_id')
         if projet_id:
             taches = Tache.objects.filter(projet_id=projet_id)
-        else:
+        elif user.role == 'administrateur':
             taches = Tache.objects.all()
+        else:
+            # Professeur/Étudiant : tâches assignées + tâches des projets créés
+            taches = Tache.objects.filter(
+                Q(assigne_a=user) | Q(projet__createur=user)
+            ).distinct()
         
         serializer = TacheSerializer(taches, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     def post(self, request):
+        # Empêcher l'assignation de tâches à un professeur sur un projet créé par un étudiant
+        assigne_a_id = request.data.get('assigne_a')
+        projet_id = request.data.get('projet')
+        if assigne_a_id and projet_id:
+            try:
+                assigne = Utilisateur.objects.get(id=assigne_a_id)
+                projet = Projet.objects.get(id=projet_id)
+                if assigne.role == 'professeur' and projet.createur.role == 'etudiant':
+                    return Response({"error": "Impossible d'assigner une tâche à un professeur sur un projet étudiant"}, status=status.HTTP_400_BAD_REQUEST)
+                # Seul le créateur ou un admin peut créer des tâches
+                if request.user.role != 'administrateur' and projet.createur != request.user:
+                    return Response({"error": "Vous n'êtes pas autorisé à créer des tâches sur ce projet"}, status=status.HTTP_403_FORBIDDEN)
+            except (Utilisateur.DoesNotExist, Projet.DoesNotExist):
+                pass
         serializer = TacheSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -462,7 +509,10 @@ class TacheDetailView(APIView):
         tache = self.get_tache(tache_id)
         if not tache:
             return Response({"error": "Tâche non trouvée"}, status=status.HTTP_404_NOT_FOUND)
-        
+        # Seul le créateur du projet, l'assigné ou un admin peut modifier
+        projet = tache.projet
+        if request.user.role != 'administrateur' and projet.createur != request.user and tache.assigne_a != request.user:
+            return Response({"error": "Vous n'êtes pas autorisé à modifier cette tâche"}, status=status.HTTP_403_FORBIDDEN)
         serializer = TacheSerializer(tache, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
@@ -473,6 +523,10 @@ class TacheDetailView(APIView):
         tache = self.get_tache(tache_id)
         if not tache:
             return Response({"error": "Tâche non trouvée"}, status=status.HTTP_404_NOT_FOUND)
+        # Seul le créateur du projet ou un admin peut supprimer
+        projet = tache.projet
+        if request.user.role != 'administrateur' and projet.createur != request.user:
+            return Response({"error": "Vous n'êtes pas autorisé à supprimer cette tâche"}, status=status.HTTP_403_FORBIDDEN)
         
         tache.delete()
         return Response({"message": "Tâche supprimée avec succès"}, status=status.HTTP_204_NO_CONTENT)
@@ -562,7 +616,7 @@ class ProfesseurDashboardView(APIView):
     def get(self, request):
         user = request.user
 
-        # Projets du prof (créateur ou collaborateur)
+        # Projets du prof : créés + supervisés
         mes_projets = Projet.objects.filter(
             Q(createur=user) | Q(collaborateur__user=user)
         ).distinct()
@@ -621,10 +675,8 @@ class EtudiantDashboardView(APIView):
     def get(self, request):
         user = request.user
 
-        # Projets de l'étudiant (créateur ou collaborateur)
-        mes_projets = Projet.objects.filter(
-            Q(createur=user) | Q(collaborateur__user=user)
-        ).distinct()
+        # Projets créés par l'étudiant
+        mes_projets = Projet.objects.filter(createur=user)
 
         total_projets = mes_projets.count()
 
@@ -674,13 +726,17 @@ class EtudiantDashboardView(APIView):
 
 
 class StatistiquesProfsView(APIView):
-    """GET: Statistiques globales des professeurs pour la page Statistiques admin"""
+    """GET: Statistiques des professeurs — admin voit tout, professeur voit seulement ses propres stats"""
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         annee = int(request.query_params.get('annee', date.today().year))
 
-        professeurs = Utilisateur.objects.filter(role='professeur', is_active=True)
+        # Si l'utilisateur est un professeur, ne montrer que ses propres stats
+        if request.user.role == 'professeur':
+            professeurs = Utilisateur.objects.filter(id=request.user.id)
+        else:
+            professeurs = Utilisateur.objects.filter(role='professeur', is_active=True)
 
         teachers_data = []
         scores = []
@@ -700,15 +756,23 @@ class StatistiquesProfsView(APIView):
                 date_echeance__year=annee
             ).count()
 
+            # Tâches terminées À TEMPS (avant l'échéance) — base du score prime
+            t_done_a_temps = Tache.objects.filter(
+                assigne_a=prof,
+                statut='termine',
+                date_echeance__year=annee,
+                date_completion__lte=models.F('date_echeance')
+            ).count()
+
             projets_count = Projet.objects.filter(
                 Q(tache__assigne_a=prof) | Q(collaborateur__user=prof) | Q(createur=prof)
             ).distinct().count()
 
-            score = round((t_done / t_total * 100), 1) if t_total > 0 else 0
+            score = round((t_done_a_temps / t_total * 100), 1) if t_total > 0 else 0
             scores.append(score)
 
             prime = 100000 if score == 100 else (30000 if score >= 90 else 0)
-            prime_eligible = score >= 80
+            prime_eligible = score >= 90
             if prime_eligible:
                 eligibles += 1
 
@@ -737,15 +801,20 @@ class StatistiquesProfsView(APIView):
                 'mensuel': mensuel
             })
 
-        # Taux de complétion mensuel global
+        # Taux de complétion mensuel global (filtré par prof si rôle professeur)
         taux_mensuel = []
+        tache_filter = {}
+        if request.user.role == 'professeur':
+            tache_filter['assigne_a'] = request.user
         for m in range(1, 13):
             total = Tache.objects.filter(
-                date_echeance__month=m, date_echeance__year=annee
+                date_echeance__month=m, date_echeance__year=annee,
+                **tache_filter
             ).count()
             done = Tache.objects.filter(
                 statut='termine',
-                date_echeance__month=m, date_echeance__year=annee
+                date_echeance__month=m, date_echeance__year=annee,
+                **tache_filter
             ).count()
             taux = round((done / total * 100), 1) if total > 0 else 0
             taux_mensuel.append({'mois': m, 'taux': taux})
@@ -758,12 +827,14 @@ class StatistiquesProfsView(APIView):
             end = start + timedelta(days=7)
             taches_count = Tache.objects.filter(
                 date_echeance__date__gte=start,
-                date_echeance__date__lt=end
+                date_echeance__date__lt=end,
+                **tache_filter
             ).count()
             validees_count = Tache.objects.filter(
                 date_completion__date__gte=start,
                 date_completion__date__lt=end,
-                statut='termine'
+                statut='termine',
+                **tache_filter
             ).count()
             activite_recente.append({
                 'semaine': f'S-{i}',

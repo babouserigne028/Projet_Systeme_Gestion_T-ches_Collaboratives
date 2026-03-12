@@ -12,7 +12,7 @@ const PrimeSummaryTable = ({ teachers, selectedT, setSelectedT }) => {
             Récapitulatif des primes
           </h3>
           <p className="text-xs text-gray-400 mt-0.5 font-medium">
-            Score ≥ {PRIME_THRESHOLD}% → éligible à la prime mensuelle
+            Score ≥ {PRIME_THRESHOLD}% → 30 000 XOF · 100% → 100 000 XOF
           </p>
         </div>
         <span className="text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2.5 py-1">
@@ -119,7 +119,8 @@ const PrimeSummaryTable = ({ teachers, selectedT, setSelectedT }) => {
                     <td className="px-4 sm:px-6 py-3.5">
                       {t.prime ? (
                         <span className="inline-flex items-center gap-1.5 bg-yellow-400 text-gray-900 text-[11px] font-bold px-2.5 py-1 rounded-full">
-                          <Ic.Award className="w-3 h-3" /> Éligible prime
+                          <Ic.Award className="w-3 h-3" />{" "}
+                          {t.primeMontant?.toLocaleString()} XOF
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1.5 bg-gray-100 border border-gray-200 text-gray-400 text-[11px] font-semibold px-2.5 py-1 rounded-full">

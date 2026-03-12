@@ -78,9 +78,9 @@ const TeacherDetail = ({ teacher, monthlyData }) => {
           />
         </div>
         <div className="flex justify-between text-[10px] text-gray-400 mt-1">
-          <span>Seuil prime : 80%</span>
+          <span>Seuil prime : 90%</span>
           <span>
-            {pct >= 80 ? "✓ Éligible" : `Manque ${(80 - pct).toFixed(1)}%`}
+            {pct >= 90 ? "✓ Éligible" : `Manque ${(90 - pct).toFixed(1)}%`}
           </span>
         </div>
       </div>

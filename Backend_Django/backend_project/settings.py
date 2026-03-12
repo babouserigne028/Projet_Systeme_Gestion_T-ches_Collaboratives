@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
+from celery.schedules import crontab
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -40,7 +41,11 @@ INSTALLED_APPS = [
     'backend_app',
     'rest_framework',
     'corsheaders',
+    'django_celery_beat',
 ]
+
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_TIMEZONE = 'Africa/Dakar'
 
 
 MIDDLEWARE = [
@@ -144,9 +149,9 @@ CORS_ALLOW_CREDENTIALS = True
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+LANGUAGE_CODE = 'fr-fr'
+TIME_ZONE = 'Africa/Dakar'
 
 USE_I18N = True
 
@@ -162,3 +167,10 @@ STATIC_URL = 'static/'
 import os
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+CELERY_BEAT_SCHEDULE = {
+    'rappel-deadlines-chaque-matin': {
+        'task': 'backend_app.tasks.rappel_deadlines',
+        'schedule': crontab(hour=6, minute=46),
+    },
+}

@@ -26,15 +26,15 @@ export const TEACHER_COLORS = [
   "#84CC16",
 ];
 
-export const PRIME_THRESHOLD = 80;
+export const PRIME_THRESHOLD = 90;
 
 export const scoreColor = (s) =>
-  s >= 80 ? "#16A34A" : s >= 65 ? "#D97706" : "#DC2626";
+  s >= 90 ? "#16A34A" : s >= 70 ? "#D97706" : "#DC2626";
 
 export const scoreBg = (s) =>
-  s >= 80
+  s >= 90
     ? "bg-green-50 border-green-200 text-green-700"
-    : s >= 65
+    : s >= 70
       ? "bg-amber-50 border-amber-200 text-amber-700"
       : "bg-red-50 border-red-200 text-red-600";
 
@@ -45,6 +45,7 @@ export const enrichTeachers = (teachers) =>
     color: TEACHER_COLORS[i % TEACHER_COLORS.length],
     name: `${t.prenom || ""} ${t.nom || ""}`.trim(),
     prime: t.prime_eligible,
+    primeMontant: t.prime_montant,
     tasks: t.taches_totales,
     done: t.taches_completees,
     projects: t.projets,
