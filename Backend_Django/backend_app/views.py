@@ -12,6 +12,8 @@ from django.db import models
 from django.db.models import Count, Q, F
 from collections import defaultdict
 from datetime import date, timedelta
+from datetime import datetime
+import calendar
 
 class UtilisateurListView(APIView):
     def get(self, request):
@@ -180,7 +182,7 @@ class UsersAwaitingValidationView(APIView):
 
 
 class UpdateUserStatusView(APIView):
-    #permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
     
     def patch(self, request, user_id):
         try:
@@ -252,23 +254,28 @@ class EligibleProfessorsForPrimeView(APIView):
         pourcentages = []
         cumul_primes = 0
         
+
         for prof in professeurs:
-            # Total des tâches assignées à ce prof ce mois
+
+            debut_mois = datetime(annee, mois, 1, 0, 0, 0)
+            fin_mois = datetime(annee, mois, calendar.monthrange(annee, mois)[1], 23, 59, 59)
+
             taches_totales = Tache.objects.filter(
                 assigne_a=prof,
-                date_echeance__month=mois,
-                date_echeance__year=annee
+                date_echeance__gte=debut_mois,
+                date_echeance__lte=fin_mois
             ).count()
-            
+
+
             # Tâches terminées AVANT l'échéance ce mois
             taches_a_temps = Tache.objects.filter(
                 assigne_a=prof,
                 statut='termine',
-                date_echeance__month=mois,
-                date_echeance__year=annee,
+                date_echeance__gte=debut_mois,
+                date_echeance__lte=fin_mois,
                 date_completion__lte=models.F('date_echeance')
             ).count()
-            
+
             # Calcul du pourcentage
             if taches_totales > 0:
                 pourcentage = (taches_a_temps / taches_totales) * 100
@@ -730,7 +737,15 @@ class StatistiquesProfsView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        mois = request.query_params.get('mois')
         annee = int(request.query_params.get('annee', date.today().year))
+
+        if mois is None:
+            mois = date.today().month
+
+        mois = int(mois)
+        debut_mois = datetime(annee, mois, 1, 0, 0, 0)
+        fin_mois = datetime(annee, mois, calendar.monthrange(annee, mois)[1], 23, 59, 59)
 
         # Si l'utilisateur est un professeur, ne montrer que ses propres stats
         if request.user.role == 'professeur':
@@ -747,20 +762,15 @@ class StatistiquesProfsView(APIView):
         for prof in professeurs:
             t_total = Tache.objects.filter(
                 assigne_a=prof,
-                date_echeance__year=annee
+                date_echeance__gte=debut_mois,
+                date_echeance__lte=fin_mois
             ).count()
 
             t_done = Tache.objects.filter(
                 assigne_a=prof,
                 statut='termine',
-                date_echeance__year=annee
-            ).count()
-
-            # Tâches terminées À TEMPS (avant l'échéance) — base du score prime
-            t_done_a_temps = Tache.objects.filter(
-                assigne_a=prof,
-                statut='termine',
-                date_echeance__year=annee,
+                date_echeance__gte=debut_mois,
+                date_echeance__lte=fin_mois,
                 date_completion__lte=models.F('date_echeance')
             ).count()
 
@@ -768,10 +778,10 @@ class StatistiquesProfsView(APIView):
                 Q(tache__assigne_a=prof) | Q(collaborateur__user=prof) | Q(createur=prof)
             ).distinct().count()
 
-            score = round((t_done_a_temps / t_total * 100), 1) if t_total > 0 else 0
+            score = round((t_done / t_total * 100), 1) if t_total > 0 else 0
             scores.append(score)
 
-            prime = 100000 if score == 100 else (30000 if score >= 90 else 0)
+            prime = 100000 if score >= 100 else (30000 if score >= 90 else 0)
             prime_eligible = score >= 90
             if prime_eligible:
                 eligibles += 1
@@ -781,9 +791,13 @@ class StatistiquesProfsView(APIView):
 
             mensuel = []
             for m in range(1, 13):
+                debut_m = datetime(annee, m, 1, 0, 0, 0)
+                fin_m = datetime(annee, m, calendar.monthrange(annee, m)[1], 23, 59, 59)
                 done = Tache.objects.filter(
-                    assigne_a=prof, statut='termine',
-                    date_echeance__month=m, date_echeance__year=annee
+                    assigne_a=prof,
+                    statut='termine',
+                    date_echeance__gte=debut_m,
+                    date_echeance__lte=fin_m
                 ).count()
                 mensuel.append({'mois': m, 'completees': done})
 
@@ -806,14 +820,19 @@ class StatistiquesProfsView(APIView):
         tache_filter = {}
         if request.user.role == 'professeur':
             tache_filter['assigne_a'] = request.user
+
         for m in range(1, 13):
+            debut_m = datetime(annee, m, 1, 0, 0, 0)
+            fin_m = datetime(annee, m, calendar.monthrange(annee, m)[1], 23, 59, 59)
             total = Tache.objects.filter(
-                date_echeance__month=m, date_echeance__year=annee,
+                date_echeance__gte=debut_m,
+                date_echeance__lte=fin_m,
                 **tache_filter
             ).count()
             done = Tache.objects.filter(
                 statut='termine',
-                date_echeance__month=m, date_echeance__year=annee,
+                date_echeance__gte=debut_m,
+                date_echeance__lte=fin_m,
                 **tache_filter
             ).count()
             taux = round((done / total * 100), 1) if total > 0 else 0
@@ -823,16 +842,16 @@ class StatistiquesProfsView(APIView):
         today = date.today()
         activite_recente = []
         for i in range(12, 0, -1):
-            start = today - timedelta(weeks=i)
-            end = start + timedelta(days=7)
+            start = datetime.combine(today - timedelta(weeks=i), datetime.min.time())
+            end = datetime.combine(start.date() + timedelta(days=7), datetime.min.time())
             taches_count = Tache.objects.filter(
-                date_echeance__date__gte=start,
-                date_echeance__date__lt=end,
+                date_echeance__gte=start,
+                date_echeance__lt=end,
                 **tache_filter
             ).count()
             validees_count = Tache.objects.filter(
-                date_completion__date__gte=start,
-                date_completion__date__lt=end,
+                date_completion__gte=start,
+                date_completion__lt=end,
                 statut='termine',
                 **tache_filter
             ).count()
