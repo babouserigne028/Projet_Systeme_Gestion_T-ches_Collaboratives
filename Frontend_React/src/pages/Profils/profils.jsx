@@ -64,7 +64,7 @@ export default function Profils() {
       const updatedUser = await utilisateurService.uploadPhoto(file);
       dispatch(setCurrentUser(updatedUser));
       refresh();
-     showToast("Photo mise à jour avec succès");
+      showToast("Photo mise à jour avec succès", "ok");
     } catch {
       showToast("Erreur lors de l'upload de la photo");
     } finally {
