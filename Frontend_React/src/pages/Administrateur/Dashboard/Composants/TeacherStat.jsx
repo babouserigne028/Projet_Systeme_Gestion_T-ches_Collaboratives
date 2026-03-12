@@ -62,7 +62,7 @@ const TeacherStat = () => {
           className="px-4 py-2 border border-gray-200 rounded-lg bg-white text-sm font-medium text-gray-700 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           {months.map((month, index) => (
-            <option key={index} value={index}>
+            <option key={index} value={index + 1}>
               {month}
             </option>
           ))}

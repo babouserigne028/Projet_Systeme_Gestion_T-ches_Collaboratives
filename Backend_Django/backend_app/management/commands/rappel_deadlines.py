@@ -29,19 +29,19 @@ class Command(BaseCommand):
             user = tache.assigne_a
             sujet = f'⚠️ Rappel : Tâche "{tache.titre}" expire demain !'
             message = f"""
-Bonjour {user.prenom},
+            Bonjour {user.prenom},
 
-La tâche suivante expire demain :
+            La tâche suivante expire demain :
 
-  → Projet  : {tache.projet.titre}
-  → Tâche   : {tache.titre}
-  → Date limite: {tache.date_echeance.strftime('%d/%m/%Y %H:%M')}
+            → Projet  : {tache.projet.titre}
+            → Tâche   : {tache.titre}
+            → Date limite: {tache.date_echeance.strftime('%d/%m/%Y %H:%M')}
 
-Merci de la compléter à temps.
+            Merci de la compléter à temps.
 
-Cordialement,
-Gestion des Tâches
-            """
+            Cordialement,
+            Gestion des Tâches
+                        """
 
             # En DEV : afficher le mail au lieu d'envoyer
             self.stdout.write(f'FAKE EMAIL: {user.email}\nSujet: {sujet}\n{message}\n')
