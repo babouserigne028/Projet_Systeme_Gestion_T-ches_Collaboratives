@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useDispatch } from "react-redux";
 import useFetchCurrentUser from "../../services/hooks/profil/useFetchCurrentUser";
 import useUpdateProfile from "../../services/hooks/profil/useUpdateProfile";
-import { useToast } from "../../services/hooks/useToast";
 import utilisateurService from "../../services/api/utilisateurService";
 import { setCurrentUser } from "../../store/userSlice";
 
@@ -10,22 +9,12 @@ import HeroCard from "./Composants/HeroCard";
 import InfoSection from "./Composants/InfoSection";
 import EditForm from "./Composants/EditForm";
 import ProfileSkeleton from "./Composants/ProfileSkeleton";
-
-/* ═══════════════════════════════════════════════
-   ESMT — Page Profil Utilisateur
-   Charte : Flat design, Jaune #EAB308
-   ─────────────────────────────────────────────
-   BG layout  : géré par DefaultLayout (bg-gray-50)
-   Cards      : bg-white, border-gray-200
-   Accent     : #EAB308 (jaune ESMT)
-   Flat design: sans ombres lourdes, clean borders
-   Responsive : 375 → 1440px
-════════════════════════════════════════════════ */
+import { useToastGlobal } from "../../services/context/ToastContext";
 
 export default function Profils() {
+  const { showToast } = useToastGlobal();
   const { user, loading, error, refresh } = useFetchCurrentUser();
   const { updateProfile, loading: saving } = useUpdateProfile();
-  const toast = useToast();
   const dispatch = useDispatch();
 
   const [editMode, setEditMode] = useState(false);
@@ -63,9 +52,9 @@ export default function Profils() {
       await updateProfile(user.id, formData);
       setEditMode(false);
       refresh();
-      toast?.success?.("Profil mis à jour avec succès");
+      showToast("Profil mis à jour avec succès");
     } catch {
-      toast?.error?.("Erreur lors de la mise à jour du profil");
+      showToast("Erreur lors de la mise à jour du profil");
     }
   };
 
@@ -75,9 +64,9 @@ export default function Profils() {
       const updatedUser = await utilisateurService.uploadPhoto(file);
       dispatch(setCurrentUser(updatedUser));
       refresh();
-      toast?.success?.("Photo mise à jour avec succès");
+     showToast("Photo mise à jour avec succès");
     } catch {
-      toast?.error?.("Erreur lors de l'upload de la photo");
+      showToast("Erreur lors de l'upload de la photo");
     } finally {
       setUploadingPhoto(false);
     }

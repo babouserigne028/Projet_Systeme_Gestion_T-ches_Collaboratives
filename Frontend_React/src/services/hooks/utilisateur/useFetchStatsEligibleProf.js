@@ -8,7 +8,7 @@ const useFetchStatsEligibleProf = () => {
 
   // Mois et année actuels par défaut
   const currentDate = new Date();
-  const [mois, setMois] = useState(currentDate.getMonth());
+  const [mois, setMois] = useState(currentDate.getMonth() + 1);
   const [annee, setAnnee] = useState(currentDate.getFullYear());
 
   const fetchStatsEligibleProf = useCallback(
@@ -19,6 +19,7 @@ const useFetchStatsEligibleProf = () => {
       try {
         const month = monthParam ?? mois;
         const year = yearParam ?? annee;
+
 
         const response =
           await utilisateurService.getStatistiquesEligibiliteProf(month, year);

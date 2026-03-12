@@ -1,7 +1,6 @@
 import { useState } from "react";
 import CreateUserModal from "./Composants/CreateUserModal";
 import Header from "./Composants/Header";
-import Toast from "../../../composants/Toast";
 import TabsHeader from "./Composants/TabsHeader";
 import Overview from "./Composants/overview";
 import Validation from "./Composants/Validation";
@@ -10,11 +9,11 @@ import useFetchStatUsers from "../../../services/hooks/utilisateur/useFetchStatU
 import useFetchListeUserEnAttentDeValidation from "../../../services/hooks/utilisateur/useFetchListeUserEnAttentDeValidation";
 import useApproveUserEnAttente from "../../../services/hooks/utilisateur/useApproveUserEnAttente";
 import useFetchStatsEligibleProf from "../../../services/hooks/utilisateur/useFetchStatsEligibleProf";
-import { useToast } from "../../../services/hooks/useToast";
+import { useToastGlobal } from "../../../services/context/ToastContext";
 
 export default function Dashboard() {
   const [tab, setTab] = useState("overview");
-  const { toast, showToast } = useToast();
+  const { showToast } = useToastGlobal();
   const [createUserModal, setCreateUserModal] = useState(false);
 
   const { response, refresh, loading, error } = useFetchStatUsers();
@@ -43,8 +42,6 @@ export default function Dashboard() {
 
   return (
     <div className="w-full space-y-5">
-      {/* ── Toast ── */}
-      {toast && <Toast toast={toast} />}
 
       {/* ── Create User Modal ── */}
       {createUserModal && (
