@@ -1,0 +1,52 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+celerybeat-schedule
+
+# Médias uploadés par les utilisateurs (ne pas versionner)
+Backend_Django/media/
+!Backend_Django/media/.gitkeep
+
+# Variables d'environnement
+.env
+.env.*
+!.env.example
+
+# Virtualenv
+venv/
+env/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.suo
+*.sw?
+.DS_Store
+
+# Node
+Frontend_React/node_modules/
+Frontend_React/dist/
+Frontend_React/dist-ssr/
+
+# Fichiers compilés cache
+*.cpython-*.pyc
+Backend_Django/backend_project/__pycache__/settings_test.cpython-312.pyc
+
+# Fichiers temporaires générés
+backend_digest.txt
+frontend_digest.txt
+README_admin_email.md

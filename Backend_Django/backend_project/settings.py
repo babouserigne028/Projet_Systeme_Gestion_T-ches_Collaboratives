@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 from pathlib import Path
 from celery.schedules import crontab
+import sys
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -100,6 +101,20 @@ DATABASES = {
     }
 }
 
+if 'test' in sys.argv:
+    DATABASES['default'] = {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'test_db.sqlite3',
+    }
+
+    class DisableMigrations:
+        def __contains__(self, _item):
+            return True
+        def __getitem__(self, _item):
+            return None
+
+    MIGRATION_MODULES = DisableMigrations()
+
 
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
@@ -171,6 +186,6 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 CELERY_BEAT_SCHEDULE = {
     'rappel-deadlines-chaque-matin': {
         'task': 'backend_app.tasks.rappel_deadlines',
-        'schedule': crontab(hour=6, minute=46),
+        'schedule': crontab(hour=20, minute=35),
     },
 }
