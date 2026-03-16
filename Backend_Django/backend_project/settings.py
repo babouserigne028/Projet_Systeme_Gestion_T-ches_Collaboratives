@@ -52,7 +52,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'django_celery_beat',
-    'chatbot',
+    'chatbot',  
 ]
 
 CELERY_BROKER_URL = 'redis://localhost:6379/0'
